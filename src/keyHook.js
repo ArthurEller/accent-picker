@@ -2,7 +2,7 @@
  * Global keyboard hook module using uiohook-napi.
  *
  * Listens for key hold events system-wide and triggers the accent picker
- * when a supported key is held for ~100ms.
+ * when a supported key is held for ~400ms.
  *
  * NOTE: On Windows, uiohook-napi may require the app to run with elevated
  * privileges (Run as Administrator) for global hooks to work in all contexts
@@ -136,7 +136,7 @@ class KeyHookManager {
           this.isPickerVisible = true;
           this.callbacks.onShowPicker(char, accents);
         }
-      }, 100);
+      }, 400);
     }
   }
 

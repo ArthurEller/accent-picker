@@ -1,6 +1,6 @@
 # Accent Picker
 
-A Windows background app that replicates macOS's accent character picker. Hold down a key for 100ms and a popup appears letting you select an accented variant — press a number or click to insert it.
+A Windows background app that replicates macOS's accent character picker. Hold down a key for 400ms and a popup appears letting you select an accented variant — press a number or click to insert it.
 
 ![demo](https://via.placeholder.com/600x80/2d2d2d/ffffff?text=a%CC%80+%C3%A1+%C3%A2+%C3%A3+%C3%A4+%C3%A5+%C3%A6+%E2%80%82%E2%80%821+2+3+4+5+6+7)
 
@@ -8,7 +8,7 @@ A Windows background app that replicates macOS's accent character picker. Hold d
 
 ## How it works
 
-1. Hold any supported key for **~100ms**
+1. Hold any supported key for **~400ms**
 2. A popup appears near your cursor with accent options numbered 1–9
 3. Press the corresponding number **or** click an option to insert it
 4. Press **Escape** or any other key to dismiss without changing anything

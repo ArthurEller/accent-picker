@@ -118,11 +118,11 @@ describe("hold timer", () => {
     expect(m.holdTimer).toBeNull();
   });
 
-  test("shows picker with correct char and accents after 100ms", () => {
+  test("shows picker with correct char and accents after 400ms", () => {
     const cb = makeCallbacks();
     const m = makeManager(cb);
     keydown(m, UiohookKey.A);
-    jest.advanceTimersByTime(100);
+    jest.advanceTimersByTime(400);
     expect(cb.onShowPicker).toHaveBeenCalledWith(
       "a",
       expect.arrayContaining(["à", "á"]),
@@ -130,7 +130,7 @@ describe("hold timer", () => {
     expect(m.isPickerVisible).toBe(true);
   });
 
-  test("cancels timer when key is released before 100ms", () => {
+  test("cancels timer when key is released before 400ms", () => {
     const cb = makeCallbacks();
     const m = makeManager(cb);
     keydown(m, UiohookKey.A);
@@ -146,7 +146,7 @@ describe("hold timer", () => {
     keydown(m, UiohookKey.A);
     jest.advanceTimersByTime(200);
     keydown(m, UiohookKey.E);
-    jest.advanceTimersByTime(100);
+    jest.advanceTimersByTime(400);
     expect(cb.onShowPicker).toHaveBeenCalledTimes(1);
     expect(cb.onShowPicker).toHaveBeenCalledWith(
       "e",
@@ -175,7 +175,7 @@ describe("shift key handling", () => {
     const m = makeManager(cb);
     keydown(m, UiohookKey.Shift);
     keydown(m, UiohookKey.A);
-    jest.advanceTimersByTime(100);
+    jest.advanceTimersByTime(400);
     expect(cb.onShowPicker).toHaveBeenCalledWith(
       "A",
       expect.arrayContaining(["À", "Á"]),
@@ -188,7 +188,7 @@ describe("shift key handling", () => {
     keydown(m, UiohookKey.Shift);
     keyup(m, UiohookKey.Shift);
     keydown(m, UiohookKey.A);
-    jest.advanceTimersByTime(100);
+    jest.advanceTimersByTime(400);
     expect(cb.onShowPicker).toHaveBeenCalledWith(
       "a",
       expect.arrayContaining(["à", "á"]),
@@ -222,7 +222,7 @@ describe("shift key handling", () => {
 describe("key repeat suppression — picker visible", () => {
   function showPicker(m) {
     keydown(m, UiohookKey.A);
-    jest.advanceTimersByTime(100);
+    jest.advanceTimersByTime(400);
   }
 
   test("number keys are ignored by keyHook (renderer handles them via DOM events)", () => {
