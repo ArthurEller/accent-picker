@@ -1,6 +1,6 @@
 # Accent Picker
 
-A Windows background app that replicates macOS's accent character picker. Hold down a key for 500ms and a popup appears letting you select an accented variant — press a number or click to insert it.
+A Windows background app that replicates macOS's accent character picker. Hold down a key for 100ms and a popup appears letting you select an accented variant — press a number or click to insert it.
 
 ![demo](https://via.placeholder.com/600x80/2d2d2d/ffffff?text=a%CC%80+%C3%A1+%C3%A2+%C3%A3+%C3%A4+%C3%A5+%C3%A6+%E2%80%82%E2%80%821+2+3+4+5+6+7)
 
@@ -8,7 +8,7 @@ A Windows background app that replicates macOS's accent character picker. Hold d
 
 ## How it works
 
-1. Hold any supported key for **~500ms**
+1. Hold any supported key for **~100ms**
 2. A popup appears near your cursor with accent options numbered 1–9
 3. Press the corresponding number **or** click an option to insert it
 4. Press **Escape** or any other key to dismiss without changing anything
@@ -19,18 +19,18 @@ The app lives in the **system tray** — no taskbar entry, no window on startup.
 
 ## Supported characters
 
-| Key | Variants |
-|-----|----------|
+| Key | Variants      |
+| --- | ------------- |
 | `a` | à á â ã ä å æ |
-| `e` | è é ê ë |
-| `i` | ì í î ï |
-| `o` | ò ó ô õ ö ø |
-| `u` | ù ú û ü |
-| `c` | ç |
-| `n` | ñ |
-| `s` | ß š |
-| `y` | ý ÿ |
-| `z` | ž |
+| `e` | è é ê ë       |
+| `i` | ì í î ï       |
+| `o` | ò ó ô õ ö ø   |
+| `u` | ù ú û ü       |
+| `c` | ç             |
+| `n` | ñ             |
+| `s` | ß š           |
+| `y` | ý ÿ           |
+| `z` | ž             |
 
 Hold **Shift** while holding the key to get the uppercase variant (e.g., `Shift + A` → À Á Â …).
 
@@ -69,10 +69,10 @@ npm run build:win
 
 When it finishes, open the `dist/` folder. You'll find two files:
 
-| File | Description |
-|------|-------------|
+| File                            | Description                                                       |
+| ------------------------------- | ----------------------------------------------------------------- |
 | `Accent Picker Setup 1.0.0.exe` | Installer — adds the app to the Start Menu and can run on startup |
-| `Accent Picker 1.0.0.exe` | Portable — run directly, no installation needed |
+| `Accent Picker 1.0.0.exe`       | Portable — run directly, no installation needed                   |
 
 > **Why must the build run on Windows?**
 > The app uses `uiohook-napi`, a native C++ module that hooks into the Windows keyboard API. It must be compiled on Windows and cannot be cross-compiled from macOS or Linux.
@@ -127,10 +127,13 @@ accent-picker/
 ## Troubleshooting
 
 **The picker never appears**
+
 - Make sure you're running as Administrator. The global keyboard hook requires elevated privileges on Windows.
 
 **The accent character isn't inserted**
+
 - The app uses clipboard paste (Ctrl+V simulation). Make sure the target app accepts paste. Some password fields block it by design.
 
 **The popup appears in the wrong position**
+
 - This can happen on high-DPI displays. The app reads the cursor position from the OS, so display scaling settings can affect placement.

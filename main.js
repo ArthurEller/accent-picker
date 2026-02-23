@@ -33,6 +33,25 @@ let pickerWindow = null;
 let keyHookManager = null;
 let isEnabled = true;
 
+// Win32 APIs for focus tracking.
+// The picker window steals focus to suppress key repeats; we must restore
+// focus to the target app before pasting the accent character.
+let winApi = null;
+let previousFocusHandle = null;
+
+if (process.platform === 'win32') {
+  try {
+    const koffi = require('koffi');
+    const user32 = koffi.load('user32.dll');
+    winApi = {
+      GetForegroundWindow: user32.func('void* GetForegroundWindow()'),
+      SetForegroundWindow: user32.func('int SetForegroundWindow(void* hWnd)'),
+    };
+  } catch (e) {
+    console.warn('Win32 focus APIs unavailable — accent insertion may not work:', e.message);
+  }
+}
+
 // ============================================================
 // Tray icon generation (programmatic - no external assets)
 // ============================================================
@@ -137,10 +156,14 @@ function createPickerWindow() {
     }
   });
 
-  // If the window somehow loses focus equivalent, hide picker
+  // If the user clicks somewhere else, just hide the picker.
+  // Do NOT restore focus here — the user intentionally moved to another window.
   pickerWindow.on('blur', () => {
     if (pickerWindow.isVisible()) {
-      hidePicker();
+      pickerWindow.webContents.send('hide-picker');
+      pickerWindow.hide();
+      previousFocusHandle = null;
+      keyHookManager.pickerDismissed();
     }
   });
 }
@@ -186,19 +209,27 @@ function showPicker(baseChar, accents) {
     height: totalHeight,
   });
 
-  // Delete the character that was typed during the hold (before focus shifts).
-  uIOhook.keyTap(UiohookKey.Backspace);
+  // Save which window has focus BEFORE we steal it.
+  if (winApi) {
+    previousFocusHandle = winApi.GetForegroundWindow();
+  }
 
-  // Small delay ensures the backspace reaches the target app before we steal focus.
-  setTimeout(() => {
-    pickerWindow.webContents.send('show-picker', { baseChar, accents });
-    pickerWindow.show(); // Steals focus → key repeats stop going to target app
-  }, 50);
+  pickerWindow.webContents.send('show-picker', { baseChar, accents });
+  pickerWindow.show(); // Steals focus → key repeats stop going to target app
 }
 
 function hidePicker() {
   if (!pickerWindow) return;
   pickerWindow.webContents.send('hide-picker');
+
+  // Restore focus to the target app while we still have SetForegroundWindow
+  // rights (i.e. before our window is hidden and we lose those rights).
+  const hwnd = previousFocusHandle;
+  previousFocusHandle = null;
+  if (winApi && hwnd) {
+    winApi.SetForegroundWindow(hwnd);
+  }
+
   pickerWindow.hide();
   keyHookManager.pickerDismissed();
 }
@@ -208,43 +239,42 @@ function hidePicker() {
 // ============================================================
 
 /**
- * Inserts a character into the currently focused application by:
- * 1. Saving the current clipboard content
- * 2. Writing the accent character to clipboard
- * 3. Simulating Ctrl+V keystroke
- * 4. Restoring the original clipboard after a delay
+ * Inserts an accent character into the previously focused application:
+ * 1. Restores focus to the target app (while we still have SetForegroundWindow rights)
+ * 2. Hides the picker
+ * 3. Sends Backspace to remove the character typed during the hold
+ * 4. Pastes the accent via clipboard + Ctrl+V
+ * 5. Restores the original clipboard content
  */
 function insertCharacter(char) {
-  // First, hide the picker
   pickerWindow.webContents.send('hide-picker');
-  pickerWindow.hide();
 
-  // Save current clipboard
   const previousClipboard = clipboard.readText();
-
-  // Write the accent character to clipboard
   clipboard.writeText(char);
 
-  // Small delay to ensure picker is fully hidden and focus is back
-  setTimeout(() => {
-    // Simulate Ctrl+V using uiohook
-    // keyTap sends a keydown + keyup sequence
-    try {
-      // Press Ctrl down
-      uIOhook.keyToggle(UiohookKey.Ctrl, 'down');
-      // Press and release V
-      uIOhook.keyTap(UiohookKey.V);
-      // Release Ctrl
-      uIOhook.keyToggle(UiohookKey.Ctrl, 'up');
-    } catch (err) {
-      console.error('Failed to simulate Ctrl+V:', err);
-    }
+  // Restore focus BEFORE hiding — we still have SetForegroundWindow rights here.
+  const hwnd = previousFocusHandle;
+  previousFocusHandle = null;
+  if (winApi && hwnd) {
+    winApi.SetForegroundWindow(hwnd);
+  }
 
-    // Restore original clipboard after paste has been processed
-    setTimeout(() => {
-      clipboard.writeText(previousClipboard);
-    }, 150);
-  }, 50);
+  pickerWindow.hide();
+
+  // Allow focus transfer to complete, then backspace the held character and paste.
+  setTimeout(() => {
+    try {
+      uIOhook.keyTap(UiohookKey.Backspace); // remove the initially typed char
+      setTimeout(() => {
+        uIOhook.keyToggle(UiohookKey.Ctrl, 'down');
+        uIOhook.keyTap(UiohookKey.V);
+        uIOhook.keyToggle(UiohookKey.Ctrl, 'up');
+        setTimeout(() => clipboard.writeText(previousClipboard), 150);
+      }, 30);
+    } catch (err) {
+      console.error('Failed to insert character:', err);
+    }
+  }, 80);
 }
 
 // ============================================================

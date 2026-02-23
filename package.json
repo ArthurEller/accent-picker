@@ -11,7 +11,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "uiohook-napi": "^1.5.4"
+    "uiohook-napi": "^1.5.4",
+    "koffi": "^2.8.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",

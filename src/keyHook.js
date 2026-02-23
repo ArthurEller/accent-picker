@@ -2,32 +2,31 @@
  * Global keyboard hook module using uiohook-napi.
  *
  * Listens for key hold events system-wide and triggers the accent picker
- * when a supported key is held for ~500ms.
+ * when a supported key is held for ~100ms.
  *
  * NOTE: On Windows, uiohook-napi may require the app to run with elevated
  * privileges (Run as Administrator) for global hooks to work in all contexts
  * (e.g., over UAC prompts or elevated windows).
  */
 
-const { uIOhook, UiohookKey } = require('uiohook-napi');
-const { hasAccents, getAccents } = require('./accents');
+const { uIOhook, UiohookKey } = require("uiohook-napi");
+const { hasAccents, getAccents } = require("./accents");
 
 // uiohook keycodes to character mapping.
 // These map the raw hardware scancodes that uiohook reports back to the
 // logical characters they represent on a standard US/international layout.
 const KEYCODE_TO_CHAR = {
-  [UiohookKey.A]: 'a',
-  [UiohookKey.E]: 'e',
-  [UiohookKey.I]: 'i',
-  [UiohookKey.O]: 'o',
-  [UiohookKey.U]: 'u',
-  [UiohookKey.C]: 'c',
-  [UiohookKey.N]: 'n',
-  [UiohookKey.S]: 's',
-  [UiohookKey.Y]: 'y',
-  [UiohookKey.Z]: 'z',
+  [UiohookKey.A]: "a",
+  [UiohookKey.E]: "e",
+  [UiohookKey.I]: "i",
+  [UiohookKey.O]: "o",
+  [UiohookKey.U]: "u",
+  [UiohookKey.C]: "c",
+  [UiohookKey.N]: "n",
+  [UiohookKey.S]: "s",
+  [UiohookKey.Y]: "y",
+  [UiohookKey.Z]: "z",
 };
-
 
 class KeyHookManager {
   /**
@@ -54,8 +53,8 @@ class KeyHookManager {
    * Start listening for global keyboard events.
    */
   start() {
-    uIOhook.on('keydown', this._onKeyDown);
-    uIOhook.on('keyup', this._onKeyUp);
+    uIOhook.on("keydown", this._onKeyDown);
+    uIOhook.on("keyup", this._onKeyUp);
     uIOhook.start();
   }
 
@@ -137,7 +136,7 @@ class KeyHookManager {
           this.isPickerVisible = true;
           this.callbacks.onShowPicker(char, accents);
         }
-      }, 500);
+      }, 100);
     }
   }
 
