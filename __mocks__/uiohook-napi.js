@@ -5,6 +5,7 @@
  */
 
 const UiohookKey = {
+  Backspace: 14,
   A: 30,
   E: 18,
   I: 23,

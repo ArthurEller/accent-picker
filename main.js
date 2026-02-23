@@ -114,14 +114,12 @@ function createPickerWindow() {
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,
-    focusable: false, // Critical: do not steal focus from the target app
     resizable: false,
     movable: false,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
     hasShadow: false,
-    type: 'toolbar', // Additional hint to not show in taskbar
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -188,8 +186,14 @@ function showPicker(baseChar, accents) {
     height: totalHeight,
   });
 
-  pickerWindow.webContents.send('show-picker', { baseChar, accents });
-  pickerWindow.showInactive(); // Show without stealing focus
+  // Delete the character that was typed during the hold (before focus shifts).
+  uIOhook.keyTap(UiohookKey.Backspace);
+
+  // Small delay ensures the backspace reaches the target app before we steal focus.
+  setTimeout(() => {
+    pickerWindow.webContents.send('show-picker', { baseChar, accents });
+    pickerWindow.show(); // Steals focus → key repeats stop going to target app
+  }, 50);
 }
 
 function hidePicker() {
@@ -335,14 +339,6 @@ app.on('ready', () => {
     },
     onHidePicker: () => {
       hidePicker();
-    },
-    onSelectAccent: (index) => {
-      // The renderer will have the accents array; we request it to resolve
-      // the character at the given index and send it back via IPC.
-      // However, for simplicity, we track the current accents in main process.
-      if (pickerWindow) {
-        pickerWindow.webContents.send('select-accent-by-index', index);
-      }
     },
   });
 

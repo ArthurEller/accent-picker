@@ -111,4 +111,20 @@
 
   // Start hidden
   container.classList.add('hidden');
+
+  // Handle keyboard input while the picker window has focus.
+  // Number keys (1-9) select the corresponding accent; Escape dismisses.
+  document.addEventListener('keydown', (e) => {
+    if (container.classList.contains('hidden')) return;
+
+    const num = parseInt(e.key, 10);
+    if (num >= 1 && num <= 9) {
+      e.preventDefault();
+      selectAccent(num - 1);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      hide();
+      window.accentPicker.dismissPicker();
+    }
+  });
 })();

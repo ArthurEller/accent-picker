@@ -28,26 +28,12 @@ const KEYCODE_TO_CHAR = {
   [UiohookKey.Z]: 'z',
 };
 
-// Number key codes (top row 1-9) for accent selection while picker is visible.
-// UiohookKey uses string-number keys: UiohookKey['1'] = 2, UiohookKey['2'] = 3, etc.
-const NUMBER_KEYCODES = {
-  [UiohookKey['1']]: 1,
-  [UiohookKey['2']]: 2,
-  [UiohookKey['3']]: 3,
-  [UiohookKey['4']]: 4,
-  [UiohookKey['5']]: 5,
-  [UiohookKey['6']]: 6,
-  [UiohookKey['7']]: 7,
-  [UiohookKey['8']]: 8,
-  [UiohookKey['9']]: 9,
-};
 
 class KeyHookManager {
   /**
    * @param {object} callbacks
    * @param {(char: string, accents: string[]) => void} callbacks.onShowPicker
    * @param {() => void} callbacks.onHidePicker
-   * @param {(index: number) => void} callbacks.onSelectAccent
    */
   constructor(callbacks) {
     this.callbacks = callbacks;
@@ -119,34 +105,10 @@ class KeyHookManager {
       return;
     }
 
-    // While picker is visible, handle selection or dismissal
+    // While picker is visible, the picker window has focus so the OS naturally
+    // stops delivering key repeats to the target app. All key handling
+    // (number selection, Escape) is done via DOM keydown events in the renderer.
     if (this.isPickerVisible) {
-      // Escape dismisses the picker
-      if (keycode === UiohookKey.Escape) {
-        this.isPickerVisible = false;
-        this.heldKeyCode = null;
-        this.callbacks.onHidePicker();
-        return;
-      }
-
-      // Number keys select an accent
-      if (keycode in NUMBER_KEYCODES) {
-        const index = NUMBER_KEYCODES[keycode];
-        this.isPickerVisible = false;
-        this.heldKeyCode = null;
-        this.callbacks.onSelectAccent(index - 1); // Convert 1-based to 0-based
-        return;
-      }
-
-      // Any other key dismisses the picker
-      if (keycode !== this.heldKeyCode) {
-        this.isPickerVisible = false;
-        this.heldKeyCode = null;
-        this.callbacks.onHidePicker();
-        return;
-      }
-
-      // If the same key repeats while picker is shown, swallow it silently
       return;
     }
 

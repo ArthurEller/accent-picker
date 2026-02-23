@@ -7,7 +7,6 @@ function makeCallbacks() {
   return {
     onShowPicker: jest.fn(),
     onHidePicker: jest.fn(),
-    onSelectAccent: jest.fn(),
   };
 }
 
@@ -15,12 +14,10 @@ function makeManager(callbacks) {
   return new KeyHookManager(callbacks || makeCallbacks());
 }
 
-// Simulate a keydown event
 function keydown(manager, keycode) {
   manager._onKeyDown({ keycode });
 }
 
-// Simulate a keyup event
 function keyup(manager, keycode) {
   manager._onKeyUp({ keycode });
 }
@@ -117,7 +114,7 @@ describe('hold timer', () => {
 
   test('does not start a timer for unsupported keys', () => {
     const m = makeManager();
-    keydown(m, 999); // arbitrary unsupported keycode
+    keydown(m, 999);
     expect(m.holdTimer).toBeNull();
   });
 
@@ -147,15 +144,14 @@ describe('hold timer', () => {
     jest.advanceTimersByTime(200);
     keydown(m, UiohookKey.E);
     jest.advanceTimersByTime(500);
-    // Only 'e' picker should fire, not 'a'
     expect(cb.onShowPicker).toHaveBeenCalledTimes(1);
     expect(cb.onShowPicker).toHaveBeenCalledWith('e', expect.arrayContaining(['è', 'é']));
   });
 
-  test('repeat keydown events for the same key do not restart timer', () => {
+  test('OS repeat keydown events for the same key do not restart timer', () => {
     const cb = makeCallbacks();
     const m = makeManager(cb);
-    keydown(m, UiohookKey.A); // first press
+    keydown(m, UiohookKey.A);
     keydown(m, UiohookKey.A); // OS repeat
     keydown(m, UiohookKey.A); // OS repeat
     jest.advanceTimersByTime(600);
@@ -198,75 +194,67 @@ describe('shift key handling', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Picker visible — number key selection
+// Bug fix: key repeat suppression
+//
+// Previously, keyHook tried to block repeats by handling keys while the picker
+// was visible — but uiohook-napi cannot suppress OS key events (its handler
+// return value is unused by the native lib). Key repeats kept reaching the
+// target app.
+//
+// Fix: the picker window now takes focus (focusable: true, show() not showInactive()).
+// The OS naturally stops sending key repeats to the target app. All picker
+// interaction (number selection, Escape) is handled via DOM events in the
+// renderer. keyHook simply ignores ALL events while the picker is visible.
 // ---------------------------------------------------------------------------
 
-describe('accent selection by number key', () => {
+describe('key repeat suppression — picker visible', () => {
   function showPicker(m) {
     keydown(m, UiohookKey.A);
     jest.advanceTimersByTime(500);
   }
 
-  test('pressing 1 selects index 0', () => {
+  test('number keys are ignored by keyHook (renderer handles them via DOM events)', () => {
     const cb = makeCallbacks();
     const m = makeManager(cb);
     showPicker(m);
+    cb.onShowPicker.mockClear();
     keydown(m, UiohookKey['1']);
-    expect(cb.onSelectAccent).toHaveBeenCalledWith(0);
-    expect(m.isPickerVisible).toBe(false);
-  });
-
-  test('pressing 3 selects index 2', () => {
-    const cb = makeCallbacks();
-    const m = makeManager(cb);
-    showPicker(m);
-    keydown(m, UiohookKey['3']);
-    expect(cb.onSelectAccent).toHaveBeenCalledWith(2);
-  });
-
-  test('pressing 9 selects index 8', () => {
-    const cb = makeCallbacks();
-    const m = makeManager(cb);
-    showPicker(m);
+    keydown(m, UiohookKey['5']);
     keydown(m, UiohookKey['9']);
-    expect(cb.onSelectAccent).toHaveBeenCalledWith(8);
+    // keyHook does not call any callbacks — renderer owns this interaction
+    expect(cb.onHidePicker).not.toHaveBeenCalled();
+    expect(m.isPickerVisible).toBe(true);
   });
-});
 
-// ---------------------------------------------------------------------------
-// Picker visible — Escape and other keys dismiss
-// ---------------------------------------------------------------------------
-
-describe('picker dismissal', () => {
-  function showPicker(m) {
-    keydown(m, UiohookKey.A);
-    jest.advanceTimersByTime(500);
-  }
-
-  test('Escape hides the picker', () => {
+  test('Escape is ignored by keyHook (renderer handles it via DOM events)', () => {
     const cb = makeCallbacks();
     const m = makeManager(cb);
     showPicker(m);
     keydown(m, UiohookKey.Escape);
-    expect(cb.onHidePicker).toHaveBeenCalledTimes(1);
-    expect(m.isPickerVisible).toBe(false);
+    expect(cb.onHidePicker).not.toHaveBeenCalled();
+    expect(m.isPickerVisible).toBe(true);
   });
 
-  test('any unrelated key hides the picker', () => {
+  test('unrelated keys are ignored by keyHook while picker is visible', () => {
     const cb = makeCallbacks();
     const m = makeManager(cb);
     showPicker(m);
-    keydown(m, 999); // unknown key
-    expect(cb.onHidePicker).toHaveBeenCalledTimes(1);
-    expect(m.isPickerVisible).toBe(false);
+    keydown(m, 999);
+    keydown(m, 888);
+    expect(cb.onHidePicker).not.toHaveBeenCalled();
+    expect(m.isPickerVisible).toBe(true);
   });
 
-  test('repeating the same held key while picker is visible is swallowed silently', () => {
+  test('repeated presses of the held key are ignored and do not retrigger picker', () => {
     const cb = makeCallbacks();
     const m = makeManager(cb);
     showPicker(m);
-    cb.onHidePicker.mockClear();
-    keydown(m, UiohookKey.A); // repeat of held key
+    cb.onShowPicker.mockClear();
+    // Simulate OS key-repeat events for 'a' — these must be swallowed
+    keydown(m, UiohookKey.A);
+    keydown(m, UiohookKey.A);
+    keydown(m, UiohookKey.A);
+    expect(cb.onShowPicker).not.toHaveBeenCalled();
     expect(cb.onHidePicker).not.toHaveBeenCalled();
     expect(m.isPickerVisible).toBe(true);
   });
