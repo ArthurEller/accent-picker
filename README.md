@@ -2,7 +2,6 @@
 
 A Windows background app that replicates macOS's accent character picker. Hold down a key for 400ms and a popup appears letting you select an accented variant — press a number or click to insert it.
 
-![demo](https://via.placeholder.com/600x80/2d2d2d/ffffff?text=a%CC%80+%C3%A1+%C3%A2+%C3%A3+%C3%A4+%C3%A5+%C3%A6+%E2%80%82%E2%80%821+2+3+4+5+6+7)
 
 ---
 
