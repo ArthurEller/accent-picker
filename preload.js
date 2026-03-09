@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('accentPicker', {
    * @param {(data: { baseChar: string, accents: string[] }) => void} callback
    */
   onShowPicker: (callback) => {
+    ipcRenderer.removeAllListeners('show-picker');
     ipcRenderer.on('show-picker', (_event, data) => {
       callback(data);
     });
@@ -36,6 +37,7 @@ contextBridge.exposeInMainWorld('accentPicker', {
    * @param {() => void} callback
    */
   onHidePicker: (callback) => {
+    ipcRenderer.removeAllListeners('hide-picker');
     ipcRenderer.on('hide-picker', (_event) => {
       callback();
     });
@@ -47,6 +49,7 @@ contextBridge.exposeInMainWorld('accentPicker', {
    * @param {(index: number) => void} callback
    */
   onSelectByIndex: (callback) => {
+    ipcRenderer.removeAllListeners('select-accent-by-index');
     ipcRenderer.on('select-accent-by-index', (_event, index) => {
       callback(index);
     });

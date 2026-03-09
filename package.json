@@ -1,6 +1,6 @@
 {
-  "name": "accent-picker",
-  "version": "1.0.0",
+  "name": "accento",
+  "version": "1.1.0",
   "description": "macOS-style accent character picker for Windows - background system tray app",
   "main": "main.js",
   "scripts": {
@@ -27,8 +27,8 @@
     ]
   },
   "build": {
-    "appId": "com.accentpicker.app",
-    "productName": "Accent Picker",
+    "appId": "com.accento.app",
+    "productName": "Accento",
     "directories": {
       "output": "dist"
     },

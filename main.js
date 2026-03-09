@@ -1,5 +1,5 @@
 /**
- * Accent Picker - Main Process
+ * Accento - Main Process
  *
  * Background system tray app that provides macOS-style accent character
  * picking on Windows. Uses uiohook-napi for global keyboard hooks and
@@ -57,23 +57,13 @@ if (process.platform === 'win32') {
 // ============================================================
 
 /**
- * Creates a small 16x16 NativeImage for the system tray icon.
- * Draws a simple "A" with an accent mark to represent the app.
+ * Creates a 16x16 NativeImage for the system tray icon.
+ * Renders a clean "á" (a with acute accent) letterform in white on transparent.
  */
 function createTrayIcon() {
-  // 16x16 RGBA raw pixel buffer: draw a simple accent icon
-  // We'll use a data URL approach with a canvas-rendered image via nativeImage
-  // Since we can't use canvas in main process easily, we'll create from a
-  // tiny inline PNG encoded as base64.
-  //
-  // This is a 16x16 icon showing "a" with an accent mark.
-  // Generated as a minimal valid PNG.
-  //
-  // Alternatively, we can create it from raw RGBA data.
   const size = 16;
   const buffer = Buffer.alloc(size * size * 4, 0); // RGBA, all transparent
 
-  // Helper to set a pixel
   const setPixel = (x, y, r, g, b, a = 255) => {
     if (x < 0 || x >= size || y < 0 || y >= size) return;
     const offset = (y * size + x) * 4;
@@ -83,35 +73,37 @@ function createTrayIcon() {
     buffer[offset + 3] = a;
   };
 
-  // Draw an accent mark (acute) at top center
-  const white = [255, 255, 255];
-  setPixel(9, 1, ...white);
-  setPixel(8, 2, ...white);
-  setPixel(7, 3, ...white);
+  const w = [255, 255, 255]; // white
 
-  // Draw a simple lowercase 'a' shape (5x7 in the lower part)
-  // Top arc of 'a'
+  // Acute accent mark (´) — two pixels rising right-to-left
+  setPixel(8, 0, ...w);
+  setPixel(7, 1, ...w);
+
+  // Lowercase 'a' body (rows 3-13), centred at x=4..9
+  //   row 3-4 : top arc        ··####·
+  //   row 5   : open top       #····#
+  //   row 6-8 : mid bar + stem ######  (right stem only on 8)
+  //   row 9-11: bottom bowl    #····#
+  //   row 12  : bottom close   ·#####
   const aPixels = [
-    // Row 5: top of 'a' bowl
-    [6, 5], [7, 5], [8, 5], [9, 5],
-    // Row 6
-    [5, 6], [10, 6],
-    // Row 7: close top, start stem
-    [6, 7], [7, 7], [8, 7], [9, 7], [10, 7],
-    // Row 8: only right stem
-    [10, 8],
-    // Row 9: bottom bowl
-    [5, 9], [10, 9],
-    // Row 10
-    [5, 10], [10, 10],
-    // Row 11: bottom close + tail
-    [6, 11], [7, 11], [8, 11], [9, 11], [10, 11], [11, 11],
-    // Right stem continuous
-    [10, 5], [10, 6], [10, 7], [10, 8], [10, 9], [10, 10],
+    // top arc
+    [5,3],[6,3],[7,3],[8,3],
+    [4,4],[9,4],
+    // open interior
+    [4,5],[9,5],
+    // mid bar — 'a' style: fills across then continues right stem
+    [4,6],[5,6],[6,6],[7,6],[8,6],[9,6],
+    // right stem only
+    [9,7],
+    // bottom bowl
+    [4,8],[9,8],
+    [4,9],[9,9],
+    // bottom close + serif tail
+    [5,10],[6,10],[7,10],[8,10],[9,10],[10,10],
   ];
 
   for (const [x, y] of aPixels) {
-    setPixel(x, y, ...white);
+    setPixel(x, y, ...w);
   }
 
   return nativeImage.createFromBuffer(buffer, {
@@ -284,7 +276,7 @@ function insertCharacter(char) {
 function createTray() {
   const icon = createTrayIcon();
   tray = new Tray(icon);
-  tray.setToolTip('Accent Picker');
+  tray.setToolTip('Accento');
 
   updateTrayMenu();
 
@@ -303,7 +295,7 @@ function updateTrayMenu() {
         keyHookManager.setEnabled(isEnabled);
         updateTrayMenu();
         tray.setToolTip(
-          isEnabled ? 'Accent Picker (Active)' : 'Accent Picker (Disabled)'
+          isEnabled ? 'Accento (Active)' : 'Accento (Disabled)'
         );
       },
     },
@@ -356,7 +348,7 @@ app.on('ready', () => {
   }
 
   // Set app user model ID for Windows taskbar grouping
-  app.setAppUserModelId('com.accentpicker.app');
+  app.setAppUserModelId('com.accento.app');
 
   createPickerWindow();
   createTray();
@@ -374,7 +366,7 @@ app.on('ready', () => {
 
   keyHookManager.start();
 
-  console.log('Accent Picker is running in the system tray.');
+  console.log('Accento is running in the system tray.');
 });
 
 app.on('window-all-closed', (event) => {
