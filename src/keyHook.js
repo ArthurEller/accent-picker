@@ -44,6 +44,13 @@ class KeyHookManager {
     this.isPickerVisible = false;
     this.isShiftPressed = false;
 
+    // When the picker is dismissed we reset heldKeyCode, but the physical key
+    // may still be held.  We track the just-dismissed keycode so that incoming
+    // OS key-repeat events for that key are ignored until the key is actually
+    // released – otherwise a new hold-timer would fire immediately and re-show
+    // the picker right after the user dismissed it.
+    this.justDismissedKeyCode = null;
+
     // Bind methods so they can be passed as event handlers
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
@@ -75,6 +82,8 @@ class KeyHookManager {
     this.enabled = value;
     if (!value) {
       this._cancelHoldTimer();
+      this.heldKeyCode = null;
+      this.justDismissedKeyCode = null;
       if (this.isPickerVisible) {
         this.isPickerVisible = false;
         this.callbacks.onHidePicker();
@@ -87,6 +96,9 @@ class KeyHookManager {
    */
   pickerDismissed() {
     this.isPickerVisible = false;
+    // Remember which key was held so we can suppress OS repeat events that
+    // arrive while the user is still physically holding it down.
+    this.justDismissedKeyCode = this.heldKeyCode;
     this.heldKeyCode = null;
     this._cancelHoldTimer();
   }
@@ -117,6 +129,13 @@ class KeyHookManager {
       // If heldKeyCode is already set to this key, this is a repeat event.
       if (this.heldKeyCode === keycode) {
         return; // Repeat event, ignore
+      }
+
+      // If this key was the one that just had its picker dismissed, the
+      // physical key may still be held and the OS is sending repeat events.
+      // Ignore until the user releases and re-presses the key.
+      if (this.justDismissedKeyCode === keycode) {
+        return;
       }
 
       // Cancel any previous timer (e.g., if user switches keys rapidly)
@@ -153,6 +172,12 @@ class KeyHookManager {
     if (keycode === this.heldKeyCode && !this.isPickerVisible) {
       this._cancelHoldTimer();
       this.heldKeyCode = null;
+    }
+
+    // Once the just-dismissed key is physically released, allow it to trigger
+    // the picker again on the next fresh press.
+    if (keycode === this.justDismissedKeyCode) {
+      this.justDismissedKeyCode = null;
     }
   }
 
